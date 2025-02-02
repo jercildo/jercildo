@@ -4,6 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'tela_login.dart'; // Certifique-se de que o caminho está correto
 
 class TelaRegistro extends StatefulWidget {
+  final String codigoReserva;
+  final String codigoAtivacao;
+
+  const TelaRegistro({Key? key, required this.codigoReserva, required this.codigoAtivacao}) : super(key: key);
+
   @override
   _TelaRegistroState createState() => _TelaRegistroState();
 }
@@ -39,11 +44,21 @@ class _TelaRegistroState extends State<TelaRegistro> {
         password: senha,
       );
 
-      await FirebaseFirestore.instance.collection('usuarios').doc(userCredential.user!.uid).set({
+      if (userCredential.user == null) {
+        setState(() {
+          _mensagemErro = 'Erro ao criar conta. Tente novamente.';
+          carregando = false;
+        });
+        return;
+      }
+
+      String userId = userCredential.user!.uid;
+
+      await FirebaseFirestore.instance.collection('usuarios').doc(userId).set({
         'nome_guerra': nomeGuerra,
         'rg': rg,
         'email': email,
-        'reserva_atual': null,
+        'reserva_atual': widget.codigoReserva.isNotEmpty ? widget.codigoReserva : null,
         'tipo_usuario': 'pendente',
       });
 
@@ -55,7 +70,12 @@ class _TelaRegistroState extends State<TelaRegistro> {
       // **Redirecionar para a tela de login**
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => TelaLogin(codigoReserva: "", codigoAtivacao: '',)),
+        MaterialPageRoute(
+          builder: (context) => TelaLogin(
+            codigoReserva: widget.codigoReserva,
+            codigoAtivacao: widget.codigoAtivacao,
+          ),
+        ),
       );
     } on FirebaseAuthException catch (e) {
       String erroMensagem = 'Erro ao registrar. Verifique os dados e tente novamente.';
@@ -95,6 +115,8 @@ class _TelaRegistroState extends State<TelaRegistro> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Text("Código da Reserva: ${widget.codigoReserva}", style: TextStyle(fontSize: 16)),
+            SizedBox(height: 10),
             TextField(
               controller: _nomeGuerraController,
               decoration: InputDecoration(labelText: "Nome de Guerra", border: OutlineInputBorder()),

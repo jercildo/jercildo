@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'tela_principal.dart';
 
 class TelaEscolherFuncao extends StatefulWidget {
-  final User user;
+  final User? user;
   final String reservaId;
 
   const TelaEscolherFuncao({Key? key, required this.user, required this.reservaId}) : super(key: key);
@@ -29,7 +29,7 @@ class _TelaEscolherFuncaoState extends State<TelaEscolherFuncao> {
   Future<void> _verificarAprovacao() async {
     DocumentSnapshot userDoc = await FirebaseFirestore.instance
         .collection('usuarios')
-        .doc(widget.user.uid)
+        .doc(widget.user?.uid)
         .get();
 
     if (userDoc.exists) {
@@ -50,7 +50,7 @@ class _TelaEscolherFuncaoState extends State<TelaEscolherFuncao> {
     bool precisaAprovacao = (funcao == 'Armeiro' || funcao == 'Administrador');
 
     try {
-      await FirebaseFirestore.instance.collection('usuarios').doc(widget.user.uid).update({
+      await FirebaseFirestore.instance.collection('usuarios').doc(widget.user?.uid).update({
         'funcao': funcao,
         'aprovado': !precisaAprovacao,
         'reserva_atual': widget.reservaId,

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'telas/tela_login.dart';
+import 'telas/tela_login_registro.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +14,7 @@ class MeuApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Sistema de Reserva',
+      title: 'Sistema de Reservas',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: TelaInicial(),
     );
@@ -34,13 +33,25 @@ class _TelaInicialState extends State<TelaInicial> {
   bool _carregandoAtivacao = false;
   bool _carregandoReserva = false;
 
-  /// **Função para validar código de ativação**
-  Future<void> _validarCodigoAtivacao() async {
+  /// **Redireciona para a tela de Login ou Registro**
+  void _navegarParaLoginOuRegistro({required String codigoReserva, required String codigoAtivacao}) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TelaLoginRegistro(
+          codigoReserva: codigoReserva,
+          codigoAtivacao: codigoAtivacao,
+        ),
+      ),
+    );
+  }
+
+  /// **Validar Código de Ativação**
+  void _validarCodigoAtivacao() async {
     String codigoAtivacao = _codigoAtivacaoController.text.trim();
+
     if (codigoAtivacao.isEmpty) {
-      setState(() {
-        _mensagemErro = 'Por favor, insira um código de ativação.';
-      });
+      setState(() => _mensagemErro = 'Por favor, insira um código de ativação.');
       return;
     }
 
@@ -50,44 +61,35 @@ class _TelaInicialState extends State<TelaInicial> {
     });
 
     try {
-      print("Verificando código de ativação: $codigoAtivacao");
-
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('codigos_ativacao')
           .doc(codigoAtivacao)
           .get();
 
-      if (!doc.exists) {
+      if (!doc.exists || doc['usado'] == true) {
         setState(() {
-          _mensagemErro = 'Código de ativação inválido.';
+          _mensagemErro = 'Código de ativação inválido ou já utilizado.';
           _carregandoAtivacao = false;
         });
         return;
       }
 
-      print("Código de ativação encontrado!");
-
-      // Redirecionar para tela de login/registro
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => TelaLogin(codigoAtivacao: codigoAtivacao)),
-      );
+      // Agora direciona para a tela de login/registro passando os códigos
+      _navegarParaLoginOuRegistro(codigoReserva: "", codigoAtivacao: codigoAtivacao);
     } catch (e) {
-      print("Erro ao validar código de ativação: $e");
       setState(() {
-        _mensagemErro = 'Erro ao validar o código. Tente novamente.';
+        _mensagemErro = 'Erro ao verificar o código.';
         _carregandoAtivacao = false;
       });
     }
   }
 
-  /// **Função para validar código de reserva**
-  Future<void> _validarCodigoReserva() async {
+  /// **Validar Código de Reserva**
+  void _validarCodigoReserva() async {
     String codigoReserva = _codigoReservaController.text.trim();
+
     if (codigoReserva.isEmpty) {
-      setState(() {
-        _mensagemErro = 'Por favor, insira um código de reserva.';
-      });
+      setState(() => _mensagemErro = 'Por favor, insira um código de reserva.');
       return;
     }
 
@@ -97,8 +99,6 @@ class _TelaInicialState extends State<TelaInicial> {
     });
 
     try {
-      print("Verificando código de reserva: $codigoReserva");
-
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('reservas')
           .doc(codigoReserva)
@@ -112,15 +112,9 @@ class _TelaInicialState extends State<TelaInicial> {
         return;
       }
 
-      print("Código de reserva encontrado!");
-
-      // Redirecionar para tela de login/registro
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => TelaLogin(codigoReserva: codigoReserva)),
-      );
+      // Agora direciona para a tela de login/registro passando os códigos
+      _navegarParaLoginOuRegistro(codigoReserva: codigoReserva, codigoAtivacao: "");
     } catch (e) {
-      print("Erro ao validar código de reserva: $e");
       setState(() {
         _mensagemErro = 'Erro ao verificar o código.';
         _carregandoReserva = false;
@@ -141,10 +135,7 @@ class _TelaInicialState extends State<TelaInicial> {
             SizedBox(height: 10),
             TextField(
               controller: _codigoAtivacaoController,
-              decoration: InputDecoration(
-                labelText: "Código de Ativação",
-                border: OutlineInputBorder(),
-              ),
+              decoration: InputDecoration(labelText: "Código de Ativação", border: OutlineInputBorder()),
             ),
             SizedBox(height: 10),
             ElevatedButton(
@@ -154,10 +145,7 @@ class _TelaInicialState extends State<TelaInicial> {
             SizedBox(height: 20),
             TextField(
               controller: _codigoReservaController,
-              decoration: InputDecoration(
-                labelText: "Código da Reserva",
-                border: OutlineInputBorder(),
-              ),
+              decoration: InputDecoration(labelText: "Código da Reserva", border: OutlineInputBorder()),
             ),
             SizedBox(height: 10),
             ElevatedButton(
