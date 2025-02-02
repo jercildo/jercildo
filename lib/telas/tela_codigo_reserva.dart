@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'tela_escolha_autenticacao.dart';
 
 class TelaCodigoReserva extends StatefulWidget {
-  final User user;
   final String codigoReserva;
 
-  const TelaCodigoReserva({Key? key, required this.user, required this.codigoReserva}) : super(key: key);
+  const TelaCodigoReserva({Key? key, required this.codigoReserva}) : super(key: key);
 
   @override
   _TelaCodigoReservaState createState() => _TelaCodigoReservaState();
@@ -23,25 +21,33 @@ class _TelaCodigoReservaState extends State<TelaCodigoReserva> {
       errorMessage = '';
     });
 
-    DocumentSnapshot doc = await FirebaseFirestore.instance
-        .collection('reservas')
-        .doc(widget.codigoReserva)
-        .get();
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('reservas')
+          .doc(widget.codigoReserva)
+          .get();
 
-    if (!doc.exists) {
+      if (!doc.exists) {
+        setState(() {
+          errorMessage = 'Código de reserva inválido.';
+          carregando = false;
+        });
+        return;
+      }
+
+      // ✅ Navegação para a tela correta com o código da reserva
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TelaEscolhaAutenticacao(reservaId: widget.codigoReserva),
+        ),
+      );
+    } catch (e) {
       setState(() {
-        errorMessage = 'Código de reserva inválido.';
+        errorMessage = 'Erro ao validar reserva. Tente novamente.';
         carregando = false;
       });
-      return;
     }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TelaEscolhaAutenticacao(reservaId: widget.codigoReserva),
-      ),
-    );
   }
 
   @override
@@ -61,13 +67,16 @@ class _TelaCodigoReservaState extends State<TelaCodigoReserva> {
             ElevatedButton(
               onPressed: carregando ? null : validarReserva,
               child: carregando
-                  ? const CircularProgressIndicator()
+                  ? const CircularProgressIndicator(color: Colors.white)
                   : const Text("Validar Reserva"),
             ),
             if (errorMessage.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 10),
-                child: Text(errorMessage, style: const TextStyle(color: Colors.red)),
+                child: Text(
+                  errorMessage,
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
               ),
           ],
         ),

@@ -27,7 +27,75 @@ class MeuApp extends StatelessWidget {
   }
 }
 
-class TelaInicial extends StatelessWidget {
+class TelaInicial extends StatefulWidget {
+  @override
+  _TelaInicialState createState() => _TelaInicialState();
+}
+
+class _TelaInicialState extends State<TelaInicial> {
+  final TextEditingController _codigoReservaController = TextEditingController();
+  String _mensagemErro = '';
+
+  /// **Função para validar o código de reserva**
+  void _validarCodigo() async {
+    String codigoInserido = _codigoReservaController.text.trim();
+
+    if (codigoInserido.isEmpty) {
+      setState(() {
+        _mensagemErro = 'Por favor, insira um código de reserva.';
+      });
+      return;
+    }
+
+    try {
+      DocumentSnapshot reserva = await FirebaseFirestore.instance
+          .collection('codigos_ativacao')
+          .doc(codigoInserido)
+          .get();
+
+      if (!reserva.exists) {
+        setState(() {
+          _mensagemErro = 'Código de reserva inválido.';
+        });
+        return;
+      }
+
+      Map<String, dynamic>? dadosReserva = reserva.data() as Map<String, dynamic>?;
+
+      if (dadosReserva == null || !dadosReserva.containsKey('usado')) {
+        setState(() {
+          _mensagemErro = 'Erro ao validar o código. Tente novamente.';
+        });
+        return;
+      }
+
+      if (dadosReserva['usado'] == true) {
+        setState(() {
+          _mensagemErro = 'Este código já foi utilizado.';
+        });
+        return;
+      }
+
+      // Atualiza o Firestore para marcar o código como usado
+      await FirebaseFirestore.instance
+          .collection('codigos_ativacao')
+          .doc(codigoInserido)
+          .update({
+        'usado': true,
+        'utilizado_por': FirebaseAuth.instance.currentUser?.uid ?? "Desconhecido",
+      });
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => TelaPrincipal()),
+      );
+    } catch (e) {
+      setState(() {
+        _mensagemErro = 'Erro ao verificar o código. Tente novamente.';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -42,11 +110,7 @@ class TelaInicial extends StatelessWidget {
             future: FirebaseFirestore.instance
                 .collection('usuarios')
                 .doc(snapshot.data!.uid)
-                .get()
-                .catchError((error) {
-              print("Erro ao buscar dados do usuário: $error");
-              return null;
-            }),
+                .get(),
             builder: (context, userSnapshot) {
               if (userSnapshot.connectionState == ConnectionState.waiting) {
                 return Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -54,22 +118,57 @@ class TelaInicial extends StatelessWidget {
 
               if (userSnapshot.hasError) {
                 return Scaffold(
-                  body: Center(
-                    child: Text("Erro ao carregar dados do usuário"),
-                  ),
+                  body: Center(child: Text('Erro ao carregar os dados do usuário')),
                 );
               }
 
-              if (userSnapshot.hasData && userSnapshot.data!.exists) {
-                var userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-
-                // ✅ Verifica se o campo "reserva_atual" existe e não é nulo
-                if (userData != null && userData.containsKey('reserva_atual') && userData['reserva_atual'] != null) {
-                  return TelaPrincipal(); // ✅ Se o usuário tem uma reserva, vai para a tela principal
-                }
+              if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                return TelaCodigoAtivacao(user: snapshot.data!.uid);
               }
 
-              return TelaCodigoAtivacao(user: snapshot.data!.uid); // ✅ Se não tem reserva, vai para ativação do código
+              // **Correção aqui: Obtendo os dados corretamente**
+              var userData = userSnapshot.data?.data() as Map<String, dynamic>?;
+
+              if (userData != null && userData.containsKey('reserva_atual')) {
+                return TelaPrincipal();
+              } else {
+                return Scaffold(
+                  appBar: AppBar(title: Text("Reserva de Arma")),
+                  body: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Insira seu código de reserva:",
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        SizedBox(height: 10),
+                        TextField(
+                          controller: _codigoReservaController,
+                          decoration: InputDecoration(
+                            labelText: "Código",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: _validarCodigo,
+                          child: Text("Validar Código"),
+                        ),
+                        if (_mensagemErro.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Text(
+                              _mensagemErro,
+                              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }
             },
           );
         } else {
