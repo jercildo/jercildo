@@ -39,7 +39,7 @@ class TelaInicial extends StatelessWidget {
             },
           );
         } else {
-          return const TelaLogin(codigoReserva: "codigo_padrao"); // ✅ Se não há login, vai para login
+          return const TelaLogin(codigoReserva: "codigo_padrao", codigoAtivacao: '',); // ✅ Se não há login, vai para login
         }
       },
     );

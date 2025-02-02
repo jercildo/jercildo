@@ -55,7 +55,7 @@ class _TelaRegistroState extends State<TelaRegistro> {
       // **Redirecionar para a tela de login**
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => TelaLogin(codigoReserva: "")),
+        MaterialPageRoute(builder: (context) => TelaLogin(codigoReserva: "", codigoAtivacao: '',)),
       );
     } on FirebaseAuthException catch (e) {
       String erroMensagem = 'Erro ao registrar. Verifique os dados e tente novamente.';

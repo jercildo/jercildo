@@ -2,8 +2,9 @@
 import 'package:flutter/material.dart';
 
 class TelaLogin extends StatefulWidget {
-  final String codigoReserva;
-  const TelaLogin({Key? key, required this.codigoReserva}) : super(key: key);
+  final String? codigoReserva;
+  final String? codigoAtivacao;
+  const TelaLogin({Key? key, this.codigoReserva, this.codigoAtivacao}) : super(key: key);
 
     @override
   _TelaLoginState createState() => _TelaLoginState();
