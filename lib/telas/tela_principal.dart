@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'tela_operador.dart';
+import 'tela_armeiro.dart';
+import 'tela_administrador.dart';
 
 class TelaPrincipal extends StatelessWidget {
   const TelaPrincipal({Key? key}) : super(key: key);
@@ -6,11 +9,35 @@ class TelaPrincipal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Tela Principal")),
+      appBar: AppBar(title: const Text("Escolha sua Função")),
       body: Center(
-        child: Text(
-          "Bem-vindo à tela principal!",
-          style: TextStyle(fontSize: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                    context, MaterialPageRoute(builder: (context) => const TelaOperador()));
+              },
+              child: const Text("Sou Operador"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                    context, MaterialPageRoute(builder: (context) => const TelaArmeiro()));
+              },
+              child: const Text("Sou Armeiro"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                    context, MaterialPageRoute(builder: (context) => const TelaAdministrador()));
+              },
+              child: const Text("Sou Administrador"),
+            ),
+          ],
         ),
       ),
     );
